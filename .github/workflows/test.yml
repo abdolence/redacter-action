@@ -127,3 +127,21 @@ jobs:
           set -x
           test "$CACHE_HIT" = true
           test "$EXIT_CODE" = 0
+
+  probe-git-dir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: scan
+        uses: ./
+        with:
+          command: scan
+          path: .
+          redacters: local-rules
+          addons: none
+          fail-on: never
+      - shell: bash
+        env:
+          SARIF_FILE: ${{ steps.scan.outputs.sarif-file }}
+        run: |
+          jq -c '.runs[0].results[] | {ruleId, uri: .locations[0].physicalLocation.artifactLocation.uri, msg: .message.text}' "$SARIF_FILE"
