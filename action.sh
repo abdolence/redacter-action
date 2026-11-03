@@ -17,7 +17,6 @@ fail() {
     exit 1
 }
 
-# Prints the items of a list separated by commas, blanks or new lines, one per line.
 list_items() {
     printf '%s\n' "$1" | tr -s ', \t\r\n' '\n' | sed '/^$/d'
 }
@@ -121,15 +120,13 @@ setup() {
     esac
     echo "Installed redacter $tag from $asset"
 
-    local addons_dir=""
-    if [ -n "$resolved_addons" ]; then
-        addons_dir="$RUNNER_TEMP/redacter-addons"
-    fi
     {
         echo "bin=$work_dir/$bin_name"
         echo "addons=$resolved_addons"
-        echo "addons-dir=$addons_dir"
-        echo "addons-cache-key=redacter-addons-$RUNNER_OS-$RUNNER_ARCH-$version-${resolved_addons//,/+}"
+        if [ -n "$resolved_addons" ]; then
+            echo "addons-dir=$RUNNER_TEMP/redacter-addons"
+            echo "addons-cache-key=redacter-addons-$RUNNER_OS-$RUNNER_ARCH-$version-${resolved_addons//,/+}"
+        fi
     } >>"$GITHUB_OUTPUT"
 }
 
