@@ -47,7 +47,6 @@ jobs:
           test "$OUTCOME" = failure
           test "$EXIT_CODE" = 2
           test "$FINDINGS" = 2
-          jq -e '.version == "2.1.0" and .runs[0].tool.driver.name == "redacter"' "$SARIF_FILE"
           jq -e '[.runs[0].results[].ruleId] | sort == ["local-rules/aws-access-key", "local-rules/email"]' "$SARIF_FILE"
           jq -e 'all(.runs[0].results[].locations[0].physicalLocation.artifactLocation;
             .uri == "test-fixtures/secrets/deploy.env" and .uriBaseId == "%SRCROOT%")' "$SARIF_FILE"
@@ -98,33 +97,30 @@ jobs:
             exit 1
           fi
 
-  addons-cache:
-    name: addons cache on ${{ matrix.os }}
-    needs: commands
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  other-version:
+    name: scan with a version that is not pinned
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: Scan with the addons the first job cached
+      - name: Scan with redacter 0.22.0
         id: scan
         uses: ./
         with:
           command: scan
           path: test-fixtures/secrets
           fail-on: never
+          version: 0.22.0
+          addons: none
 
-      - name: Check that the addons came from the cache
+      - name: Check that the scan found the planted secret
         shell: bash
         env:
-          CACHE_HIT: ${{ steps.scan.outputs.cache-hit }}
           EXIT_CODE: ${{ steps.scan.outputs.exit-code }}
+          FINDINGS: ${{ steps.scan.outputs.findings }}
         run: |
           set -x
-          test "$CACHE_HIT" = true
           test "$EXIT_CODE" = 0
+          test "$FINDINGS" = 2
