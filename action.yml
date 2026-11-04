@@ -1,4 +1,4 @@
-name: Redacter
+name: Redacter scan and redact
 description: Scan files for secrets and personal data (PII), or copy them redacted, and report the findings as SARIF for code scanning
 author: Abdulla Abdurakhmanov
 branding:
