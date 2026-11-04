@@ -75,6 +75,7 @@ A file that no redacter reads is left out of the copy. A file that fails is not 
 | `categories` | Every category | Data categories to look for, separated by commas or new lines, such as `secrets`, or only exclusions such as `!other`, see [Limiting to data categories](https://github.com/abdolence/redacter-rs#limiting-to-data-categories) |
 | `fail-on` | `findings` | What makes `scan` fail: `findings`, `unconfirmed` or `never`. `scan` only |
 | `addons` | `auto` | Addons to install and cache: `auto`, `none`, or a list such as `ocr,pdf` |
+| `cache` | `true` | `true` caches the addons between runs, `false` downloads them on every run, see [What runs where](#what-runs-where) |
 | `version` | `0.22.1` | The redacter release to install, 0.22.0 or later |
 | `args` | | Further redacter arguments, one per line, such as `--local-rules=secrets,url` |
 
@@ -99,7 +100,7 @@ everyone with read access to the repository can see.
 | `sarif-file` | Path of the SARIF report in the temporary directory of the runner, for `github/codeql-action/upload-sarif`. Set whenever redacter wrote a report, also when the step fails on its exit code |
 | `findings` | Number of findings in the SARIF report: what `scan` found, or what `cp` redacted. Unconfirmed files are not counted. A SARIF report keeps at most 5000 results |
 | `exit-code` | Exit code of redacter: `0`, `2` when `scan` reported findings or, with `fail-on: unconfirmed`, unconfirmed files, or `1` on an error |
-| `cache-hit` | `true` when the addons were restored from the cache |
+| `cache-hit` | `true` when the addons were restored from the cache and `false` when the cache had none. Empty when `cache` is `false` or there are no addons |
 
 The step fails when the exit code is not `0`. See [Exit codes](https://github.com/abdolence/redacter-rs#exit-codes)
 for what each one means for `scan`. `cp` exits with `1` when a file fails.
@@ -118,7 +119,9 @@ step that gates on `findings` also checks `exit-code`.
   release asset that was replaced has a new digest;
 - `redacter addons install` downloads the addons from the same releases and checks every file against a digest pinned
   in redacter. `actions/cache` keeps them under a key of the runner, the redacter version and the addon list, and later
-  runs restore them instead. The cache is saved before redacter runs, so a scan that fails on findings still fills it;
+  runs restore them instead. The cache is saved before redacter runs, so a scan that fails on findings still fills it.
+  A repository has 10 GB of Actions cache, so `cache: false` keeps the addons out of it, at the cost of downloading
+  them on every run;
 - the local redacters run on the runner, and no data leaves it. The default, `local-rules` and `local-credential-ml`,
   needs no credentials and downloads a model of about 130 MB on the first run. `local-gliner` downloads a model of
   about 1.17 GB;

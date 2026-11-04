@@ -26,6 +26,9 @@ inputs:
   addons:
     description: "Addons to install and cache: `auto` for OCR, PDF rendering and the models of the redacters, `none`, or a list such as `ocr,pdf`."
     default: auto
+  cache:
+    description: "`true` caches the addons between runs, `false` downloads them on every run. A repository has 10 GB of Actions cache, and the `local-gliner` model alone takes about 1.17 GB."
+    default: "true"
   version:
     description: The redacter release to install, 0.22.0 or later. The default one is checked against SHA-256 digests pinned in the action.
     default: 0.22.1
@@ -43,7 +46,7 @@ outputs:
     description: "Exit code of redacter: 0, 2 when `scan` reported findings or, with `fail-on: unconfirmed`, unconfirmed files, or 1 on an error, such as a file that `cp` failed to copy."
     value: ${{ steps.run.outputs.exit-code }}
   cache-hit:
-    description: "`true` when the addons were restored from the cache."
+    description: "`true` when the addons were restored from the cache and `false` when the cache had none. Empty when `cache` is `false` or there are no addons."
     value: ${{ steps.restore-addons.outputs.cache-hit }}
 
 runs:
@@ -58,13 +61,14 @@ runs:
         INPUT_FAIL_ON: ${{ inputs.fail-on }}
         INPUT_REDACTERS: ${{ inputs.redacters }}
         INPUT_ADDONS: ${{ inputs.addons }}
+        INPUT_CACHE: ${{ inputs.cache }}
         INPUT_VERSION: ${{ inputs.version }}
         GITHUB_API_TOKEN: ${{ github.server_url == 'https://github.com' && github.token || '' }}
       run: bash "$GITHUB_ACTION_PATH/action.sh" setup
 
     - name: Restore the addons
       id: restore-addons
-      if: steps.setup.outputs.addons != ''
+      if: steps.setup.outputs.addons-cache-key != ''
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.setup.outputs.addons-dir }}
@@ -81,7 +85,7 @@ runs:
 
     # Saved before redacter runs, so a run that fails on findings still leaves the addons cached.
     - name: Save the addons
-      if: steps.setup.outputs.addons != '' && steps.restore-addons.outputs.cache-hit != 'true'
+      if: steps.setup.outputs.addons-cache-key != '' && steps.restore-addons.outputs.cache-hit != 'true'
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.setup.outputs.addons-dir }}

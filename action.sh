@@ -63,6 +63,10 @@ setup() {
             ;;
         *) fail "command must be scan or cp, got '$INPUT_COMMAND'" ;;
     esac
+    case "$INPUT_CACHE" in
+        true | false) ;;
+        *) fail "cache must be true or false, got '$INPUT_CACHE'" ;;
+    esac
     command -v jq >/dev/null 2>&1 || fail "jq is not installed on the runner, the action reads the release and the SARIF report with it"
 
     local asset bin_name
@@ -146,7 +150,10 @@ setup() {
         echo "addons=$resolved_addons"
         if [ -n "$resolved_addons" ]; then
             echo "addons-dir=$RUNNER_TEMP/redacter-addons"
-            echo "addons-cache-key=redacter-addons-$RUNNER_OS-$RUNNER_ARCH-$version-${resolved_addons//,/+}"
+            # The cache steps of action.yml run only when there is a key, so `cache: false` leaves it out.
+            if [ "$INPUT_CACHE" = true ]; then
+                echo "addons-cache-key=redacter-addons-$RUNNER_OS-$RUNNER_ARCH-$version-${resolved_addons//,/+}"
+            fi
         fi
     } >>"$GITHUB_OUTPUT"
 }
