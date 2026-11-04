@@ -143,8 +143,10 @@ run() {
     while IFS= read -r redacter; do
         args+=(--redact "$redacter")
     done < <(list_items "$INPUT_REDACTERS")
-    if [ -n "$INPUT_CATEGORIES" ]; then
-        args+=("--categories=$INPUT_CATEGORIES")
+    local categories
+    categories=$(list_items "$INPUT_CATEGORIES" | paste -sd, -)
+    if [ -n "$categories" ]; then
+        args+=("--categories=$categories")
     fi
     if [ -n "$INPUT_FAIL_ON" ]; then
         args+=("--fail-on=$INPUT_FAIL_ON")

@@ -78,7 +78,7 @@ A file that no redacter reads is left out of the copy, and so is a file that fai
 | `path` | `.` | File or directory to scan or copy, relative to the workspace |
 | `destination` | | Where `cp` writes the redacted copy, ending with `/` for a directory. `cp` only |
 | `redacters` | `local-rules,local-credential-ml` | Redacters to run, separated by commas or new lines, see [What runs where](#what-runs-where) |
-| `categories` | Every category | Data categories to look for, such as `secrets`, or only exclusions such as `!other`, see [Limiting to data categories](https://github.com/abdolence/redacter-rs#limiting-to-data-categories) |
+| `categories` | Every category | Data categories to look for, separated by commas or new lines, such as `secrets`, or only exclusions such as `!other`, see [Limiting to data categories](https://github.com/abdolence/redacter-rs#limiting-to-data-categories) |
 | `fail-on` | `findings` | What makes `scan` fail: `findings`, `unconfirmed` or `never`. `scan` only |
 | `addons` | `auto` | Addons to install and cache: `auto`, `none`, or a list such as `ocr,pdf` |
 | `version` | `0.22.0` | The redacter release to install, 0.22.0 or later |

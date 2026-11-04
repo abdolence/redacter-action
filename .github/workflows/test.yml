@@ -58,6 +58,7 @@ jobs:
         with:
           command: scan
           path: test-fixtures/secrets
+          categories: secrets, contact
           fail-on: never
 
       - name: Check that the scan passed with the same findings

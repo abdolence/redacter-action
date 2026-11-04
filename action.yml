@@ -20,7 +20,7 @@ inputs:
       `local-gliner` downloads a model of about 1.17 GB on the first run, and the next runs restore it from the cache.
     default: local-rules,local-credential-ml
   categories:
-    description: Data categories to look for, comma separated, such as `secrets`, or only exclusions such as `!other`. Default is every category.
+    description: Data categories to look for, separated by commas or new lines, such as `secrets`, or only exclusions such as `!other`. Default is every category.
   fail-on:
     description: "What makes `scan` fail: `findings`, `unconfirmed` or `never`. Default is `findings`. Only for `scan`."
   addons:
