@@ -39,6 +39,19 @@ sha256_of() {
     fi
 }
 
+# SHA-256 digests of the archives of the default version, as "<version>/<asset>". An install of the
+# default version needs no API call and no token, and a replaced release asset is refused. Update
+# them together with the default `version` in action.yml.
+pinned_sha256() {
+    case "$1" in
+        0.22.1/redacter-Linux-x86_64.tar.gz) echo 6eae67ae54f0814778a5046d966675ee2c703028a143b8defbea462e9a03167c ;;
+        0.22.1/redacter-Linux-aarch64.tar.gz) echo afac06c33cde9d1c55b901900f1fcbea21d8444fe85bdeb24c953b13fc6d73fb ;;
+        0.22.1/redacter-Darwin-aarch64.tar.gz) echo 7c2f7e4b34cf63a00bca9682411f63c365898393bf38ab92e32b320f4b6c1dae ;;
+        0.22.1/redacter-Darwin-x86_64.tar.gz) echo 2f56d846a84cbb7d66f559f1acc085c27179349ba60beb5f7802109291a45631 ;;
+        0.22.1/redacter-Windows-x86_64.zip) echo aaa9ec55cdaf68f49c7862bbfa0410f128ed8599bbf37332eb5af630cd60ffd9 ;;
+    esac
+}
+
 setup() {
     case "$INPUT_COMMAND" in
         scan)
@@ -64,7 +77,7 @@ setup() {
 
     local version=${INPUT_VERSION#v}
     case "$version" in
-        "" | [!0-9]* | *[!0-9A-Za-z.+-]*) fail "version must be a redacter release such as 0.22.0, got '$INPUT_VERSION'" ;;
+        "" | [!0-9]* | *[!0-9A-Za-z.+-]*) fail "version must be a redacter release such as 0.22.1, got '$INPUT_VERSION'" ;;
     esac
 
     local redacters="" redacter
@@ -103,10 +116,24 @@ setup() {
     fi | curl -fsSL --retry 3 -K - -H 'Accept: application/vnd.github+json' -o "$work_dir/release.json" "$release_url" ||
         fail "cannot read release $tag from $release_url"
 
-    local expected
-    expected=$(jq -r --arg asset "$asset" '.assets[] | select(.name == $asset) | .digest // empty' "$work_dir/release.json" | tr -d '\r')
-    [[ $expected =~ ^sha256:[0-9a-f]{64}$ ]] || fail "release $tag has no SHA-256 digest for $asset, refusing to install it"
-    expected=${expected#sha256:}
+    local expected digest_source="pinned in the action"
+    expected=$(pinned_sha256 "$version/$asset")
+    if [ -z "$expected" ]; then
+        digest_source="recorded by GitHub for the release"
+        local release_url="https://api.github.com/repos/$repo/releases/tags/$tag"
+        # The token reaches curl as a config on standard input, which keeps it off the command line
+        # that other users of a self-hosted runner can read.
+        if [ -n "$GITHUB_API_TOKEN" ]; then
+            printf 'header = "Authorization: Bearer %s"\n' "$GITHUB_API_TOKEN"
+        fi | curl -fsSL --retry 3 -K - -H 'Accept: application/vnd.github+json' -o "$work_dir/release.json" "$release_url" ||
+            fail "cannot read release $tag from $release_url"
+
+        jq -e --arg asset "$asset" 'any(.assets[]; .name == $asset)' "$work_dir/release.json" >/dev/null ||
+            fail "release $tag has no asset $asset"
+        expected=$(jq -r --arg asset "$asset" '.assets[] | select(.name == $asset) | .digest // empty' "$work_dir/release.json" | tr -d '\r')
+        [[ $expected =~ ^sha256:[0-9a-f]{64}$ ]] || fail "release $tag has no SHA-256 digest for $asset, refusing to install it"
+        expected=${expected#sha256:}
+    fi
 
     local archive="$work_dir/$asset"
     curl -fsSL --retry 3 -o "$archive" "https://github.com/$repo/releases/download/$tag/$asset" ||
@@ -119,7 +146,7 @@ setup() {
         *.zip) unzip -q "$archive" "$bin_name" -d "$work_dir" ;;
         *) tar -xzf "$archive" -C "$work_dir" "$bin_name" ;;
     esac
-    echo "Installed redacter $tag from $asset"
+    echo "Installed redacter $tag from $asset, SHA-256 $digest_source"
 
     {
         echo "bin=$work_dir/$bin_name"

@@ -27,8 +27,8 @@ inputs:
     description: "Addons to install and cache: `auto` for OCR, PDF rendering and the models of the redacters, `none`, or a list such as `ocr,pdf`."
     default: auto
   version:
-    description: The redacter release to install, 0.22.0 or later.
-    default: 0.22.0
+    description: The redacter release to install, 0.22.0 or later. The default one is checked against SHA-256 digests pinned in the action.
+    default: 0.22.1
   args:
     description: Further redacter arguments, one per line, such as `--local-rules=secrets,url`.
 

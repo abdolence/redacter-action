@@ -81,7 +81,7 @@ A file that no redacter reads is left out of the copy, and so is a file that fai
 | `categories` | Every category | Data categories to look for, separated by commas or new lines, such as `secrets`, or only exclusions such as `!other`, see [Limiting to data categories](https://github.com/abdolence/redacter-rs#limiting-to-data-categories) |
 | `fail-on` | `findings` | What makes `scan` fail: `findings`, `unconfirmed` or `never`. `scan` only |
 | `addons` | `auto` | Addons to install and cache: `auto`, `none`, or a list such as `ocr,pdf` |
-| `version` | `0.22.0` | The redacter release to install, 0.22.0 or later |
+| `version` | `0.22.1` | The redacter release to install, 0.22.0 or later |
 | `args` | | Further redacter arguments, one per line, such as `--local-rules=secrets,url` |
 
 Addons are the files redacter needs and does not bundle: the OCR models (`ocr`), the Pdfium library that renders PDF
@@ -90,7 +90,8 @@ and the models of the redacters in `redacters`. With `none` the action installs 
 in its default directory or in `REDACTER_ADDONS_DIR`.
 
 The default `version` is the release the action was tested with, so a workflow that pins a release of the action
-installs the same redacter on every run.
+installs the same redacter on every run. The action holds the SHA-256 digests of its archives and refuses an archive
+that differs, so installing the default version makes no request to the GitHub API and needs no token.
 
 The action passes `--unsupported-as-text`, so `.env` files, keys and source code are read as text, and writes the
 SARIF report with `--report-file` and `--report-format`. `args` cannot set these options again, as redacter rejects a
@@ -111,10 +112,12 @@ for what each one means for `scan`. `cp` exits with `0` unless an error stops th
 
 ## What runs where
 
-- The action downloads the redacter release archive for the runner from
-  [the releases of redacter-rs](https://github.com/abdolence/redacter-rs/releases), and checks it against the SHA-256
-  digest GitHub records for the file before it extracts it. On github.com it reads the release with the token of the
-  workflow, since the API allows anonymous requests only 60 an hour for each IP address;
+- the action downloads the redacter release archive for the runner from
+  [the releases of redacter-rs](https://github.com/abdolence/redacter-rs/releases), and checks its SHA-256 digest
+  before it extracts it. For the default `version` the digests are in the action. For another `version` the action
+  reads the digest GitHub records for the file in the release, with the token of the workflow on github.com, since the
+  API allows anonymous requests only 60 an hour for each IP address. That digest detects a corrupted download, and a
+  release asset that was replaced has a new digest;
 - `redacter addons install` downloads the addons from the same releases and checks every file against a digest pinned
   in redacter. `actions/cache` keeps them under a key of the runner, the redacter version and the addon list, and later
   runs restore them instead. The cache is saved before redacter runs, so a scan that fails on findings still fills it;
