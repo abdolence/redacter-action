@@ -112,6 +112,7 @@ jobs:
           command: scan
           path: test-fixtures/secrets
           fail-on: never
+          redacters: local-rules
           version: 0.22.0
           addons: none
 
