@@ -5,11 +5,6 @@ personal data (PII) in the files of a repository and fails the build when it fin
 published or uploaded as artefacts, and reports both as SARIF, the format GitHub code scanning reads, so findings appear
 on the Security tab and on pull requests.
 
-## Status
-
-No release exists yet, and the action is not available in the Marketplace. The examples below use `@v1`, the tag of
-the first release.
-
 ## Usage
 
 A single action covers both operations, selected with the `command` input.
@@ -44,10 +39,9 @@ jobs:
   rules, such as IPv6 addresses in Rust paths and Unix timestamps in the shape of a Swedish personal number;
 - the step fails when redacter finds something, and the upload still runs: the action sets `sarif-file` before it
   fails;
-- the scan reads the `.git` directory of the checkout too, and the reflog there holds the email address of the
-  runner, a finding whenever the scan looks for contact data, as it does by default. A `.redacterignore` file at the
-  root of the repository with the line `.git/` leaves the directory out. The same file keeps the mock keys of test
-  fixtures out of the scan, see [Ignoring files and findings](https://github.com/abdolence/redacter-rs#ignoring-files-and-findings).
+- the scan leaves `.git` directories out. A `.redacterignore` file at the root of the repository keeps the mock keys
+  of test fixtures out of the scan, see
+  [Ignoring files and findings](https://github.com/abdolence/redacter-rs#ignoring-files-and-findings).
 
 Redaction of files before they are uploaded:
 
@@ -68,7 +62,7 @@ jobs:
           path: redacted-logs/
 ```
 
-A file that no redacter reads is left out of the copy, and so is a file that fails.
+A file that no redacter reads is left out of the copy. A file that fails is not copied either, and the step fails.
 
 ## Inputs
 
@@ -102,13 +96,17 @@ everyone with read access to the repository can see.
 
 | Output | Description |
 |---|---|
-| `sarif-file` | Path of the SARIF report in the temporary directory of the runner, for `github/codeql-action/upload-sarif`. Set when the step fails too |
-| `findings` | Number of findings in the SARIF report: what `scan` found, or what `cp` redacted. A SARIF report keeps at most 5000 results |
-| `exit-code` | Exit code of redacter: `0`, `2` when `scan` reported findings, or `1` on an error |
+| `sarif-file` | Path of the SARIF report in the temporary directory of the runner, for `github/codeql-action/upload-sarif`. Set whenever redacter wrote a report, also when the step fails on its exit code |
+| `findings` | Number of findings in the SARIF report: what `scan` found, or what `cp` redacted. Unconfirmed files are not counted. A SARIF report keeps at most 5000 results |
+| `exit-code` | Exit code of redacter: `0`, `2` when `scan` reported findings or, with `fail-on: unconfirmed`, unconfirmed files, or `1` on an error |
 | `cache-hit` | `true` when the addons were restored from the cache |
 
 The step fails when the exit code is not `0`. See [Exit codes](https://github.com/abdolence/redacter-rs#exit-codes)
-for what each one means for `scan`. `cp` exits with `0` unless an error stops the copy.
+for what each one means for `scan`. `cp` exits with `1` when a file fails.
+
+An unconfirmed file is one where a model named values that redacter could not locate in the file. It is a warning in the
+report, and `fail-on: unconfirmed` fails the step for it. Such a step has `exit-code` `2` and `findings` `0`, so a later
+step that gates on `findings` also checks `exit-code`.
 
 ## What runs where
 
@@ -124,9 +122,10 @@ for what each one means for `scan`. `cp` exits with `0` unless an error stops th
 - the local redacters run on the runner, and no data leaves it. The default, `local-rules` and `local-credential-ml`,
   needs no credentials and downloads a model of about 130 MB on the first run. `local-gliner` downloads a model of
   about 1.17 GB;
-- the cloud redacters (GCP DLP, AWS Comprehend, AWS Bedrock and Guardrails, Presidio, Vertex AI, Gemini, OpenAI) send
-  the content of the files to their provider. They take credentials as the command line tool does, for example from
-  `google-github-actions/auth` or `aws-actions/configure-aws-credentials`, and their options through `args`;
+- the cloud redacters (GCP DLP, AWS Comprehend, AWS Bedrock and Guardrails, Vertex AI, Gemini, OpenAI) send the content
+  of the files to their provider, and Presidio sends it to the server you run. They take credentials as the command
+  line tool does, for example from `google-github-actions/auth` or `aws-actions/configure-aws-credentials`, and their
+  options through `args`;
 - the log and the SARIF report show values masked, such as `A******************E` for an AWS access key. The report
   stays on the runner until a step such as `github/codeql-action/upload-sarif` uploads it.
 

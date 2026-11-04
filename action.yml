@@ -34,13 +34,13 @@ inputs:
 
 outputs:
   sarif-file:
-    description: Path of the SARIF report, for `github/codeql-action/upload-sarif`. Set when the step fails too.
+    description: Path of the SARIF report, for `github/codeql-action/upload-sarif`. Set whenever redacter wrote a report, also when the step fails on its exit code.
     value: ${{ steps.run.outputs.sarif-file }}
   findings:
-    description: "Number of findings in the SARIF report: what `scan` found, or what `cp` redacted."
+    description: "Number of findings in the SARIF report: what `scan` found, or what `cp` redacted. Unconfirmed files are not counted, so a step that `fail-on: unconfirmed` fails can have 0 findings."
     value: ${{ steps.run.outputs.findings }}
   exit-code:
-    description: "Exit code of redacter: 0, 2 when `scan` reported findings, or 1 on an error."
+    description: "Exit code of redacter: 0, 2 when `scan` reported findings or, with `fail-on: unconfirmed`, unconfirmed files, or 1 on an error, such as a file that `cp` failed to copy."
     value: ${{ steps.run.outputs.exit-code }}
   cache-hit:
     description: "`true` when the addons were restored from the cache."

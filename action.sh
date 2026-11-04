@@ -21,8 +21,8 @@ list_items() {
     printf '%s\n' "$1" | tr -s ', \t\r\n' '\n' | sed '/^$/d'
 }
 
-# Names go into the command line and the cache key, so only lower case words joined by hyphens
-# pass. redacter itself checks that the name exists.
+# Addon names go into the cache key and every name into the command line, so only lower case words
+# joined by hyphens pass. redacter itself checks that a redacter or an addon exists.
 check_name() {
     case "$2" in
         "" | -* | *[!a-z0-9-]*) fail "$1 has an invalid name '$2'" ;;
@@ -108,13 +108,6 @@ setup() {
 
     local tag="v$version" work_dir
     work_dir=$(mktemp -d "$RUNNER_TEMP/redacter.XXXXXX")
-    local release_url="https://api.github.com/repos/$repo/releases/tags/$tag"
-    # The token reaches curl as a config on standard input, which keeps it off the command line
-    # that other users of a self-hosted runner can read.
-    if [ -n "$GITHUB_API_TOKEN" ]; then
-        printf 'header = "Authorization: Bearer %s"\n' "$GITHUB_API_TOKEN"
-    fi | curl -fsSL --retry 3 -K - -H 'Accept: application/vnd.github+json' -o "$work_dir/release.json" "$release_url" ||
-        fail "cannot read release $tag from $release_url"
 
     local expected digest_source="pinned in the action"
     expected=$(pinned_sha256 "$version/$asset")
