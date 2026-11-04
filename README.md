@@ -127,9 +127,9 @@ for what each one means for `scan`. `cp` exits with `0` unless an error stops th
 - the log and the SARIF report show values masked, such as `A******************E` for an AWS access key. The report
   stays on the runner until a step such as `github/codeql-action/upload-sarif` uploads it.
 
-The action runs on Linux X64 and ARM64, macOS ARM64 and Windows X64 runners, such as `ubuntu-latest`,
-`ubuntu-24.04-arm`, `macos-latest` and `windows-latest`, and fails on other runners. It reads the release and the SARIF
-report with `jq`, which GitHub-hosted runners have.
+The action runs on Linux X64 and ARM64, macOS X64 and ARM64, and Windows X64 runners, such as `ubuntu-latest`,
+`ubuntu-24.04-arm`, `macos-latest`, `macos-15-intel` and `windows-latest`, and fails on other runners. It reads the
+release and the SARIF report with `jq`, which GitHub-hosted runners have.
 
 ## More about redacter
 

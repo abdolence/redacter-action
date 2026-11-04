@@ -57,8 +57,9 @@ setup() {
         Linux-X64) asset=redacter-Linux-x86_64.tar.gz bin_name=redacter ;;
         Linux-ARM64) asset=redacter-Linux-aarch64.tar.gz bin_name=redacter ;;
         macOS-ARM64) asset=redacter-Darwin-aarch64.tar.gz bin_name=redacter ;;
+        macOS-X64) asset=redacter-Darwin-x86_64.tar.gz bin_name=redacter ;;
         Windows-X64) asset=redacter-Windows-x86_64.zip bin_name=redacter.exe ;;
-        *) fail "$RUNNER_OS $RUNNER_ARCH runners are not supported. Supported: Linux X64 and ARM64, macOS ARM64, Windows X64" ;;
+        *) fail "$RUNNER_OS $RUNNER_ARCH runners are not supported. Supported: Linux X64 and ARM64, macOS X64 and ARM64, Windows X64" ;;
     esac
 
     local version=${INPUT_VERSION#v}
