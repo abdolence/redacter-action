@@ -1,0 +1,114 @@
+name: Redacter scan and redact
+description: Scan files for secrets and personal data (PII), or copy them redacted, and report the findings as SARIF for code scanning
+author: Abdulla Abdurakhmanov
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  command:
+    description: "`scan` reports the secrets and personal data it finds, `cp` copies files with them redacted."
+    required: true
+  path:
+    description: File or directory to scan or copy, relative to the workspace.
+    default: .
+  destination:
+    description: Where `cp` writes the redacted copy. End it with `/` to copy a directory. Only for `cp`.
+  redacters:
+    description: >-
+      Redacters to run, separated by commas or new lines. The default runs on the runner only, so no data leaves it.
+      `local-gliner` downloads a model of about 1.17 GB on the first run, and the next runs restore it from the cache.
+    default: local-rules,local-credential-ml
+  categories:
+    description: Data categories to look for, separated by commas or new lines, such as `secrets`, or only exclusions such as `!other`. Default is every category.
+  fail-on:
+    description: "What makes `scan` fail: `findings`, `unconfirmed` or `never`. Default is `findings`. Only for `scan`."
+  addons:
+    description: "Addons to install and cache: `auto` for OCR, PDF rendering and the models of the redacters, `none`, or a list such as `ocr,pdf`."
+    default: auto
+  cache:
+    description: "`true` caches the addons between runs, `false` downloads them on every run. A repository has 10 GB of Actions cache, and the `local-gliner` model alone takes about 1.17 GB."
+    default: "true"
+  version:
+    description: The redacter release to install, 0.22.0 or later. The default one is checked against SHA-256 digests pinned in the action.
+    default: 0.22.1
+  args:
+    description: Further redacter arguments, one per line, such as `--local-rules=secrets,url`.
+
+outputs:
+  sarif-file:
+    description: Path of the SARIF report, for `github/codeql-action/upload-sarif`. Set whenever redacter wrote a report, also when the step fails on its exit code.
+    value: ${{ steps.run.outputs.sarif-file }}
+  findings:
+    description: "Number of findings in the SARIF report: what `scan` found, or what `cp` redacted. Unconfirmed files are not counted, so a step that `fail-on: unconfirmed` fails can have 0 findings."
+    value: ${{ steps.run.outputs.findings }}
+  exit-code:
+    description: "Exit code of redacter: 0, 2 when `scan` reported findings or, with `fail-on: unconfirmed`, unconfirmed files, or 1 on an error, such as a file that `cp` failed to copy."
+    value: ${{ steps.run.outputs.exit-code }}
+  cache-hit:
+    description: "`true` when the addons were restored from the cache and `false` when the cache had none. Empty when `cache` is `false` or there are no addons."
+    value: ${{ steps.restore-addons.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install redacter
+      id: setup
+      shell: bash
+      env:
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_DESTINATION: ${{ inputs.destination }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_REDACTERS: ${{ inputs.redacters }}
+        INPUT_ADDONS: ${{ inputs.addons }}
+        INPUT_CACHE: ${{ inputs.cache }}
+        INPUT_VERSION: ${{ inputs.version }}
+        GITHUB_API_TOKEN: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+      run: bash "$GITHUB_ACTION_PATH/action.sh" setup
+
+    - name: Restore the addons
+      id: restore-addons
+      if: steps.setup.outputs.addons-cache-key != ''
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.setup.outputs.addons-dir }}
+        key: ${{ steps.setup.outputs.addons-cache-key }}
+
+    - name: Install the addons
+      if: steps.setup.outputs.addons != ''
+      shell: bash
+      env:
+        REDACTER_BIN: ${{ steps.setup.outputs.bin }}
+        REDACTER_ADDONS_DIR: ${{ steps.setup.outputs.addons-dir }}
+        ADDONS: ${{ steps.setup.outputs.addons }}
+      run: '"$REDACTER_BIN" addons install "$ADDONS"'
+
+    # Saved before redacter runs, so a run that fails on findings still leaves the addons cached.
+    - name: Save the addons
+      if: steps.setup.outputs.addons-cache-key != '' && steps.restore-addons.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.setup.outputs.addons-dir }}
+        key: ${{ steps.setup.outputs.addons-cache-key }}
+
+    - name: Run redacter
+      id: run
+      shell: bash
+      env:
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_DESTINATION: ${{ inputs.destination }}
+        INPUT_CATEGORIES: ${{ inputs.categories }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_REDACTERS: ${{ inputs.redacters }}
+        INPUT_ARGS: ${{ inputs.args }}
+        REDACTER_BIN: ${{ steps.setup.outputs.bin }}
+        ADDONS_DIR: ${{ steps.setup.outputs.addons-dir }}
+      run: bash "$GITHUB_ACTION_PATH/action.sh" run
+
+    - name: Fail on the exit code of redacter
+      if: steps.run.outputs.exit-code != '0'
+      shell: bash
+      env:
+        EXIT_CODE: ${{ steps.run.outputs.exit-code }}
+      run: exit "$EXIT_CODE"
