@@ -79,7 +79,7 @@ A file that no redacter reads is left out of the copy. A file that fails is not 
 | `fail-on` | `findings` | What makes `scan` fail: `findings`, `unconfirmed` or `never`. `scan` only |
 | `addons` | `auto` | Addons to install and cache: `auto`, `none`, or a list such as `ocr,pdf` |
 | `cache` | `true` | `true` caches the addons between runs, `false` downloads them on every run, see [What runs where](#what-runs-where) |
-| `version` | `0.22.2` | The redacter release to install, 0.22.0 or later |
+| `version` | `0.23.0` | The redacter release to install, 0.22.0 or later |
 | `args` | | Further redacter arguments, one per line, such as `--local-rules=secrets,url` |
 
 Addons are the files redacter needs and does not bundle: the OCR models (`ocr`), the Pdfium library that renders PDF

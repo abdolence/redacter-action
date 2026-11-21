@@ -44,6 +44,11 @@ sha256_of() {
 # default `version` of action.yml here, and keep those of the earlier ones.
 pinned_sha256() {
     case "$1" in
+        0.23.0/redacter-Linux-x86_64.tar.gz) echo c91fd631234dcf0fbe18d1c7203e43f7b8e67d6917ffe928cbc7a6e286bd8af1 ;;
+        0.23.0/redacter-Linux-aarch64.tar.gz) echo 104e68ca5720362ceae03703efdb9105850f8a44c20669f81d15da17cba2e60f ;;
+        0.23.0/redacter-Darwin-aarch64.tar.gz) echo 7550b49b49b3774e53f3b1531e6205422478e7fe6ec7f18e306b3a25c85a4f03 ;;
+        0.23.0/redacter-Darwin-x86_64.tar.gz) echo ba5ace2a25c0ce0915477e84985a7e8250b1078865c7dcde23eb0d030f01108f ;;
+        0.23.0/redacter-Windows-x86_64.zip) echo 8c9fa9a155e18ae6e4921ec6b59f9a8d7526a0e9f10f34fd76616fe55b7cd3ac ;;
         0.22.2/redacter-Linux-x86_64.tar.gz) echo 3dfe3e5ece0c9496d527530739c2cb473484a2f7b827c7e36c9cd0e16846a465 ;;
         0.22.2/redacter-Linux-aarch64.tar.gz) echo 8b23ecf7429a7a7756fe41816005a7ac5776afff8515cad44bee85d5c0b60d43 ;;
         0.22.2/redacter-Darwin-aarch64.tar.gz) echo 45303dac15f64b58e8f85f73a9618f3724485d38e248891423fd02c1542d0206 ;;
